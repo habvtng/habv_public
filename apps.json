@@ -1,0 +1,11 @@
+[
+  {
+    "id": "shop_manager",
+    "name": "Shop Manager",
+    "version": "1.0.0",
+    "bundleId": "vn.shopmanager.app",
+    "ipa": "ipa/ShopManagerApp.ipa",
+    "icon": "icons/shopmanager.png",
+    "description": "Quản lý cửa hàng, bán hàng, quản lý kho, quản lý nhân viên và khách hàng."
+  }
+]
