@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TRE - TEGOTE Setup SQL Server</title>
+<style>
+  :root {
+    --bg: #f4f5f7; --panel: #fff; --text: #1d2330; --muted: #5d6677; --line: #d9dde5;
+    --accent: #0b6bcb; --accent-ink: #fff; --code-bg: #101622; --code-text: #e6edf7;
+    --kw: #7cb7ff; --str: #f2b880; --cm: #7a8aa3; --fn: #b9a6ff; --warn-bg: #fff6e0; --warn-line: #e9c46a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #12151c; --panel: #1b202b; --text: #e6e9ef; --muted: #98a2b3; --line: #2d3443;
+      --accent: #4c9aff; --accent-ink: #07111f; --warn-bg: #2b2412; --warn-line: #7a6320; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.55 -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { padding: 20px 16px 8px; max-width: 1000px; margin: 0 auto; }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  header p { margin: 0; color: var(--muted); }
+  main { max-width: 1000px; margin: 0 auto; padding: 8px 16px 48px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; }
+  .conn { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+  .conn label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+  .conn input { padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px;
+    background: var(--bg); color: var(--text); font: inherit; }
+  .conn small { grid-column: 1 / -1; color: var(--muted); }
+  nav.tabs { display: flex; gap: 2px; overflow-x: auto; border-bottom: 1px solid var(--line); margin-bottom: 14px; }
+  nav.tabs button { flex: none; padding: 9px 14px; border: 1px solid transparent; border-bottom: 0;
+    background: none; color: var(--muted); font: inherit; cursor: pointer; border-radius: 8px 8px 0 0; }
+  nav.tabs button:hover { color: var(--text); }
+  nav.tabs button[aria-selected="true"] { background: var(--panel); color: var(--accent);
+    border-color: var(--line); font-weight: 600; margin-bottom: -1px; }
+  section[hidden] { display: none; }
+  section h2 { margin: 0 0 6px; font-size: 18px; }
+  section ol { margin: 8px 0 14px; padding-left: 22px; }
+  .note { background: var(--warn-bg); border: 1px solid var(--warn-line); border-radius: 8px; padding: 8px 12px; margin: 10px 0; font-size: 14px; }
+  .block { margin: 12px 0; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); }
+  .block .bar { display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    padding: 6px 10px; background: var(--panel); font-size: 13px; color: var(--muted); }
+  .block button { border: 1px solid var(--line); background: var(--bg); color: var(--text);
+    padding: 3px 10px; border-radius: 6px; cursor: pointer; font: inherit; font-size: 12px; }
+  .block button.ok { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  pre { margin: 0; padding: 12px 14px; background: var(--code-bg); color: var(--code-text);
+    overflow: auto; max-height: 460px; font: 13px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace; tab-size: 4; }
+  .k { color: var(--kw); } .s { color: var(--str); } .c { color: var(--cm); } .f { color: var(--fn); }
+  .pager { display: flex; justify-content: space-between; margin-top: 16px; }
+  .pager button { padding: 7px 14px; border: 1px solid var(--line); background: var(--panel); color: var(--text);
+    border-radius: 8px; cursor: pointer; font: inherit; }
+  .pager button:disabled { opacity: .4; cursor: default; }
+</style>
+</head>
+<body>
+<header>
+  <h1>TRE - TEGOTE · Cài đặt SQL Server ở máy client</h1>
+  <p>Chạy lần lượt các bước 0 → 8 trong SQL Server Management Studio (SSMS), kết nối bằng quyền <b>sysadmin</b>.</p>
+</header>
+
+<main>
+  <div class="card">
+    <div class="conn">
+      <label>Server <input id="p-SERVER" value="(local)"></label>
+      <label>Database <input id="p-DB" value="master"></label>
+      <label>Linked server (tên) <input id="p-LINK" value="TNG"></label>
+      <label>Địa chỉ server nguồn <input id="p-REMOTE" value="192.168.1.10"></label>
+      <label>User SQL <input id="p-USER" value="tng"></label>
+      <label>Mật khẩu <input id="p-PASS" type="password" value="ChangeMe@123"></label>
+      <small>Giá trị nhập ở đây được thay trực tiếp vào các đoạn lệnh bên dưới (chỉ xử lý trên trình duyệt, không gửi đi đâu).</small>
+    </div>
+  </div>
+
+  <nav class="tabs" role="tablist" id="tabs"></nav>
+  <div id="panels"></div>
+  <div class="pager"><button id="prev">← Bước trước</button><button id="next">Bước sau →</button></div>
+</main>
+
+<script>
+/* Token {{X}} được thay bằng giá trị ở ô nhập phía trên. */
+let STEPS = [];
+const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const params = { SERVER: "p-SERVER", DB: "p-DB", LINK: "p-LINK", REMOTE: "p-REMOTE", USER: "p-USER", PASS: "p-PASS" };
+const fill = sql => sql.replace(/\{\{(\w+)\}\}/g, (m, k) => {
+  const el = params[k] && document.getElementById(params[k]);
+  return el ? el.value.replace(/'/g, "''") : m;
+});
+const KW = "USE|GO|IF|NOT|EXISTS|SELECT|FROM|WHERE|BEGIN|END|DECLARE|EXEC|SET|INSERT|INTO|UPDATE|CREATE|OR|ALTER|VIEW|PROCEDURE|AS|TABLE|INDEX|ON|JOIN|LEFT|GROUP|BY|ORDER|DESC|AND|NULL|DEFAULT|PRIMARY|KEY|REFERENCES|WITH|TOP|GOTO|COMMIT|ROLLBACK|TRANSACTION|LOGIN|USER|FOR|ROLE|ADD|MEMBER|DROP|OUTPUT|OUTPUT|INT|BIGINT|TINYINT|DATE|DATETIME|NVARCHAR|VARCHAR|BINARY|IDENTITY|ELSE|COUNT|CAST|CONCAT|CONVERT|DATEADD|GETDATE|ISNULL|DAY";
+function hl(sql) {
+  const re = new RegExp(`(--[^\\n]*)|(N?'(?:[^']|'')*')|\\b(${KW})\\b`, "gi");
+  let out = "", last = 0, m;
+  while ((m = re.exec(sql))) {
+    out += esc(sql.slice(last, m.index));
+    const cls = m[1] ? "c" : m[2] ? "s" : "k";
+    out += `<span class="${cls}">${esc(m[0])}</span>`;
+    last = re.lastIndex;
+  }
+  return out + esc(sql.slice(last));
+}
+
+const tabs = document.getElementById("tabs"), panels = document.getElementById("panels");
+function build() {
+STEPS.forEach((s, i) => {
+  const b = document.createElement("button");
+  b.role = "tab"; b.textContent = s.title; b.id = "tab" + i;
+  b.onclick = () => select(i);
+  tabs.append(b);
+  const sec = document.createElement("section");
+  sec.id = "panel" + i; sec.role = "tabpanel"; sec.className = "card"; sec.hidden = true;
+  sec.innerHTML = `<h2>${s.title.replace(/^\d+\.\s*/, "")}</h2><p>${s.intro}</p>
+    <ol>${s.steps.map(x => `<li>${x}</li>`).join("")}</ol>
+    ${s.note ? `<div class="note">⚠ ${s.note}</div>` : ""}
+    ${s.blocks.map((bl, j) => `<div class="block"><div class="bar"><span>${bl.name}</span>
+      <button data-t="${i}" data-b="${j}">Sao chép</button></div><pre></pre></div>`).join("")}`;
+  panels.append(sec);
+});
+
+}
+function render() {
+  STEPS.forEach((s, i) => {
+    panels.children[i].querySelectorAll("pre").forEach((pre, j) => { pre.innerHTML = hl(fill(s.blocks[j].sql)); });
+  });
+}
+function select(i) {
+  STEPS.forEach((_, k) => {
+    tabs.children[k].setAttribute("aria-selected", k === i);
+    panels.children[k].hidden = k !== i;
+  });
+  document.getElementById("prev").disabled = i === 0;
+  document.getElementById("next").disabled = i === STEPS.length - 1;
+  select.cur = i;
+  try { localStorage.setItem("tre-tab", i); } catch (e) {}
+  location.hash = "b" + i;
+}
+panels.addEventListener("click", async e => {
+  const btn = e.target.closest("button[data-t]");
+  if (!btn) return;
+  const text = fill(STEPS[btn.dataset.t].blocks[btn.dataset.b].sql);
+  try { await navigator.clipboard.writeText(text); }
+  catch (_) {
+    const ta = Object.assign(document.createElement("textarea"), { value: text });
+    document.body.append(ta); ta.select(); document.execCommand("copy"); ta.remove();
+  }
+  btn.textContent = "Đã chép ✓"; btn.classList.add("ok");
+  setTimeout(() => { btn.textContent = "Sao chép"; btn.classList.remove("ok"); }, 1500);
+});
+document.querySelectorAll(".conn input").forEach(i => i.addEventListener("input", render));
+document.getElementById("prev").onclick = () => select(select.cur - 1);
+document.getElementById("next").onclick = () => select(select.cur + 1);
+
+fetch("step.json", { cache: "no-cache" })
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+  .then(data => { STEPS = data; build(); start(); })
+  .catch(err => { panels.innerHTML = '<div class="card note">Không tải được step.json (' + err.message + '). Cần mở qua http(s), không mở trực tiếp file://.</div>'; });
+
+function start() {
+render();
+let idx = 0;
+const h = /^#b(\d)$/.exec(location.hash);
+if (h && STEPS[h[1]]) idx = +h[1];
+else try { idx = Math.min(+localStorage.getItem("tre-tab") || 0, STEPS.length - 1); } catch (e) {}
+select(idx);
+}
+</script>
+</body>
+</html>
