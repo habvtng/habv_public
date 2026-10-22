@@ -36,6 +36,8 @@
   .info { flex: 1; min-width: 0; }
   .info h2 { font-size: 17px; margin: 0; }
   .info p { margin: 2px 0 0; color: var(--muted); font-size: 14px; }
+  .btns { display: flex; flex-direction: column; gap: 6px; align-items: stretch; text-align: center; }
+  .btn.android { background: #3ddc84; color: #04210f; }
   .ver { font-size: 12px; color: var(--muted); }
   .btn {
     background: var(--accent); color: #fff; text-decoration: none; font-weight: 600;
@@ -48,18 +50,19 @@
 <body>
 <main>
   <h1>App Store nội bộ</h1>
-  <p class="sub">Mở trang này bằng Safari trên iPhone/iPad rồi bấm Cài đặt.</p>
-  <div id="warn" class="warn">Trang này cần mở bằng <b>Safari trên iOS</b> để cài đặt ứng dụng.</div>
+  <p class="sub">iPhone/iPad: mở bằng Safari rồi bấm iOS. Android: bấm Android để tải file APK.</p>
+  <div id="warn" class="warn">Trang này cần mở bằng <b>Safari trên iOS</b> hoặc trình duyệt trên Android để cài đặt.</div>
   <div id="list"></div>
   <ul class="help">
     <li>Sau khi cài: <b>Cài đặt → Cài đặt chung → VPN &amp; Quản lý thiết bị</b> → tin cậy chứng chỉ nhà phát triển.</li>
+    <li>Android: mở file APK đã tải, cho phép "Cài đặt ứng dụng không rõ nguồn" nếu được hỏi.</li>
     <li>IPA phải được ký (Ad Hoc / Enterprise / Development) và UDID thiết bị phải nằm trong provisioning profile.</li>
   </ul>
 </main>
 <script>
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
     (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-  if (!isIOS) document.getElementById("warn").style.display = "block";
+  if (!isIOS && !/Android/.test(navigator.userAgent)) document.getElementById("warn").style.display = "block";
 
   const root = new URL(".", location.href).href; // luôn có "/" cuối
 
@@ -74,7 +77,10 @@
         <div class="info">
           <h2></h2><p></p><span class="ver"></span>
         </div>
-        <a class="btn" href="itms-services://?action=download-manifest&url=${manifest}">Cài đặt</a>`;
+        <div class="btns">
+          ${a.ipa ? `<a class="btn ios" href="itms-services://?action=download-manifest&url=${manifest}">iOS</a>` : ""}
+          ${a.apk ? `<a class="btn android" href="${a.apk}" download>Android</a>` : ""}
+        </div>`;
       el.querySelector("h2").textContent = a.name;
       el.querySelector("p").textContent = a.description || "";
       el.querySelector(".ver").textContent = `v${a.version}`;

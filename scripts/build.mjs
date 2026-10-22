@@ -16,7 +16,7 @@ rmSync("dist", { recursive: true, force: true });
 mkdirSync("dist/manifests", { recursive: true });
 
 for (const f of ["index.html", "apps.json"]) cpSync(f, `dist/${f}`);
-for (const d of ["ipa", "icons", "setup"]) if (existsSync(d)) cpSync(d, `dist/${d}`, { recursive: true });
+for (const d of ["ipa", "apk", "icons", "setup"]) if (existsSync(d)) cpSync(d, `dist/${d}`, { recursive: true });
 
 for (const a of apps) {
   const plist = `<?xml version="1.0" encoding="UTF-8"?>
